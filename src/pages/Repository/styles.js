@@ -106,3 +106,41 @@ export const IssueList = styled.ul`
 export const SelectStateIssue = styled.div`
   width: 100px;
 `;
+
+export const DivButtons = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  span {
+    font-weight: bold;
+    margin-top: 20px;
+  }
+`;
+
+export const PageButton = styled.button.attrs((props) => ({
+  type: 'submit',
+  disabled: props.disabled,
+}))`
+  background: #7159c1;
+  height: 30px;
+  border: 0;
+  padding: 0 15px;
+  margin-left: 10px;
+  border-radius: 4px;
+  cursor: pointer;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 15px;
+
+  &:hover {
+    opacity: 0.8;
+  }
+
+  &[disabled] {
+    cursor: initial;
+    opacity: 0.6;
+  }
+`;

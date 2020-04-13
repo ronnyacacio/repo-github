@@ -2,10 +2,18 @@ import React, { Component } from 'react';
 import Select from 'react-select';
 import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
+import { FaArrowLeft, FaArrowRight } from 'react-icons/fa';
 
 import api from '../../services/api';
 
-import { Loading, Owner, IssueList, SelectStateIssue } from './styles';
+import {
+  Loading,
+  Owner,
+  IssueList,
+  SelectStateIssue,
+  DivButtons,
+  PageButton,
+} from './styles';
 import Container from '../../components/Container';
 
 export default class Repository extends Component {
@@ -24,6 +32,7 @@ export default class Repository extends Component {
     issues: [],
     loading: true,
     stateIssue: 'all',
+    page: 1,
   };
 
   async componentDidMount() {
@@ -31,7 +40,7 @@ export default class Repository extends Component {
 
     const repoName = decodeURIComponent(match.params.repo);
 
-    const { stateIssue } = this.state;
+    const { stateIssue, page } = this.state;
 
     const [repository, issues] = await Promise.all([
       api.get(`/repos/${repoName}`),
@@ -39,11 +48,12 @@ export default class Repository extends Component {
         params: {
           state: stateIssue,
           per_page: 5,
+          page,
         },
       }),
     ]);
 
-    this.setState({
+    await this.setState({
       repository: repository.data,
       issues: issues.data,
       loading: false,
@@ -51,33 +61,61 @@ export default class Repository extends Component {
   }
 
   componentDidUpdate(_, prevState) {
-    const { stateIssue } = this.state;
+    const { stateIssue, page } = this.state;
 
     if (prevState.stateIssue !== stateIssue) this.saveStateIssue();
+
+    if (prevState.page !== page) this.savePage();
   }
 
-  handleChangeSelect = (selectedOption) => {
-    this.setState({ stateIssue: selectedOption });
+  handleChangeSelect = async (selectedOption) => {
+    await this.setState({ stateIssue: selectedOption });
   };
 
   saveStateIssue = async () => {
-    const { repository, stateIssue } = this.state;
+    const { repository, stateIssue, page } = this.state;
 
     const issues = await api.get(`/repos/${repository.full_name}/issues`, {
       params: {
         state: stateIssue.value,
         per_page: 5,
+        page,
       },
     });
 
-    this.setState({
+    await this.setState({
       issues: issues.data,
       loading: false,
     });
   };
 
+  savePage = async () => {
+    const { repository, stateIssue, page } = this.state;
+
+    const issues = await api.get(`/repos/${repository.full_name}/issues`, {
+      params: {
+        state: stateIssue.value,
+        per_page: 5,
+        page,
+      },
+    });
+
+    await this.setState({
+      page,
+      issues: issues.data,
+      loading: false,
+    });
+  };
+
+  handlePage = async (action) => {
+    const { page } = this.state;
+    await this.setState({
+      page: action === 'back' ? page - 1 : page + 1,
+    });
+  };
+
   render() {
-    const { repository, issues, loading, stateIssue } = this.state;
+    const { repository, issues, loading, stateIssue, page } = this.state;
 
     if (loading) return <Loading>Carregando...</Loading>;
 
@@ -88,7 +126,7 @@ export default class Repository extends Component {
     ];
 
     const customStyles = {
-      menu: (provided, _) => ({
+      menu: (provided) => ({
         ...provided,
         color: '#7159c1',
       }),
@@ -126,6 +164,18 @@ export default class Repository extends Component {
             </li>
           ))}
         </IssueList>
+        <DivButtons>
+          <PageButton
+            disabled={page < 2}
+            onClick={() => this.handlePage('back')}
+          >
+            <FaArrowLeft color="#FFF" size={14} />
+          </PageButton>
+          <span>Página {page}</span>
+          <PageButton onClick={() => this.handlePage('next')}>
+            <FaArrowRight color="#FFF" size={14} />
+          </PageButton>
+        </DivButtons>
       </Container>
     );
   }
