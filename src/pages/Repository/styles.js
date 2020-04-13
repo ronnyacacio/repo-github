@@ -14,6 +14,7 @@ export const Owner = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
+  margin-bottom: 20px;
 
   a {
     color: #7159c1;
@@ -100,4 +101,8 @@ export const IssueList = styled.ul`
       }
     }
   }
+`;
+
+export const SelectStateIssue = styled.div`
+  width: 100px;
 `;

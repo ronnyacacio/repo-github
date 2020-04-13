@@ -1,10 +1,11 @@
 import React, { Component } from 'react';
+import Select from 'react-select';
 import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
 
 import api from '../../services/api';
 
-import { Loading, Owner, IssueList } from './styles';
+import { Loading, Owner, IssueList, SelectStateIssue } from './styles';
 import Container from '../../components/Container';
 
 export default class Repository extends Component {
@@ -22,6 +23,7 @@ export default class Repository extends Component {
     repository: {},
     issues: [],
     loading: true,
+    stateIssue: 'all',
   };
 
   async componentDidMount() {
@@ -29,11 +31,13 @@ export default class Repository extends Component {
 
     const repoName = decodeURIComponent(match.params.repo);
 
+    const { stateIssue } = this.state;
+
     const [repository, issues] = await Promise.all([
       api.get(`/repos/${repoName}`),
       api.get(`/repos/${repoName}/issues`, {
         params: {
-          state: 'open',
+          state: stateIssue,
           per_page: 5,
         },
       }),
@@ -46,10 +50,49 @@ export default class Repository extends Component {
     });
   }
 
+  componentDidUpdate(_, prevState) {
+    const { stateIssue } = this.state;
+
+    if (prevState.stateIssue !== stateIssue) this.saveStateIssue();
+  }
+
+  handleChangeSelect = (selectedOption) => {
+    this.setState({ stateIssue: selectedOption });
+  };
+
+  saveStateIssue = async () => {
+    const { repository, stateIssue } = this.state;
+
+    const issues = await api.get(`/repos/${repository.full_name}/issues`, {
+      params: {
+        state: stateIssue.value,
+        per_page: 5,
+      },
+    });
+
+    this.setState({
+      issues: issues.data,
+      loading: false,
+    });
+  };
+
   render() {
-    const { repository, issues, loading } = this.state;
+    const { repository, issues, loading, stateIssue } = this.state;
 
     if (loading) return <Loading>Carregando...</Loading>;
+
+    const optionsSelect = [
+      { value: 'all', label: 'all' },
+      { value: 'open', label: 'open' },
+      { value: 'closed', label: 'closed' },
+    ];
+
+    const customStyles = {
+      menu: (provided, _) => ({
+        ...provided,
+        color: '#7159c1',
+      }),
+    };
 
     return (
       <Container>
@@ -59,6 +102,14 @@ export default class Repository extends Component {
           <h1>{repository.name}</h1>
           <p>{repository.description}</p>
         </Owner>
+        <SelectStateIssue>
+          <Select
+            options={optionsSelect}
+            styles={customStyles}
+            value={stateIssue}
+            onChange={this.handleChangeSelect}
+          />
+        </SelectStateIssue>
         <IssueList>
           {issues.map((issue) => (
             <li key={String(issue.id)}>
